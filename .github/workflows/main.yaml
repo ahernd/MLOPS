@@ -70,12 +70,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+<<<<<<< HEAD
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+=======
+    - name: Run Docker Image to serve users
+      # Run the pulled Docker image as a container on the EC2 instance
+      run: |
+        docker run -d -p 8080:8080 --ipc="host" --name=mlops -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' ${{ env.ECR_URI }}:latest
+>>>>>>> 47924be (3rd commit: added modified files)
 
       - name: Login to Amazon ECR
         id: login-ecr

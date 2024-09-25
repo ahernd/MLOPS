@@ -9,8 +9,9 @@ on:
 # Global environment variables that will be used across jobs
 env:
   AWS_REGION: us-east-1  # AWS region where the ECR and ECS services are located
-  ECR_REPOSITORY_NAME: mlops  # Amazon ECR repository name from the user input
-  ECR_URI: 202533536090.dkr.ecr.us-east-1.amazonaws.com/mlops  # Full ECR URI where the Docker image will be pushed
+  ECR_REPOSITORY_NAME: mlops-container  # Amazon ECR repository name from the user input
+  # Full ECR URI where the Docker image will be pushed (matches AWS_ECR_LOGIN_URI)
+  ECR_URI: ${{ secrets.AWS_ECR_LOGIN_URI }} 
 
 jobs:
   integration:
@@ -70,15 +71,17 @@ jobs:
       id: login-ecr  # Log into Amazon ECR to pull the image on the self-hosted runner
       uses: aws-actions/amazon-ecr-login@v1  # AWS action to login to ECR
 
-    - name: Pull latest image
-      # Pull the latest Docker image from ECR using the latest tag
+    - name: Pull latest image (using commit SHA tag)
       run: |
-        docker pull ${{ env.ECR_URI }}:latest
+        docker pull ${{ env.ECR_URI }}:${{ needs.integration.outputs.image }}  # Use the specific image tag
 
-    - name: Run Docker Image to serve users
-      # Run the pulled Docker image as a container on the EC2 instance
+    - name: Run Docker Image to serve users (dynamic container name)
       run: |
-        docker run -d -p 8080:8080 --ipc="host" --name=mlops-container -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' ${{ env.ECR_URI }}:latest
+        CONTAINER_NAME=mlops-${{ github.sha }}  # Incorporate commit SHA into the container name
+        docker run -d -p 8080:8080 --ipc="host" --name=$CONTAINER_NAME \
+            -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' \
+            -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+            ${{ env.ECR_URI }}:${{ needs.integration.outputs.image }} 
 
     - name: Clean previous images and containers
       # Clean up old Docker images and containers to free up space

@@ -37089,25 +37089,25 @@
 /***/ })
 /******/ ]);
 //# sourceMappingURL=bundle.js.map </script></head><body>
-        <div class="lime top_div" id="top_divN83YUCMXKP42VP5"></div>
+        <div class="lime top_div" id="top_div6OMVHMJ570LA5ZQ"></div>
         
         <script>
-        var top_div = d3.select('#top_divN83YUCMXKP42VP5').classed('lime top_div', true);
+        var top_div = d3.select('#top_div6OMVHMJ570LA5ZQ').classed('lime top_div', true);
         
         
                     var pp_div = top_div.append('div')
                                         .classed('lime predicted_value', true);
                     var pp_svg = pp_div.append('svg').style('width', '100%');
-                    var pp = new lime.PredictedValue(pp_svg, -1.3618244354955737, -1.3618244354955737, 2.4941112161985246);
+                    var pp = new lime.PredictedValue(pp_svg, -1.3634342853787973, -1.3718503214670472, 2.5284761108701344);
                     
         var exp_div;
             var exp = new lime.Explanation(["negative", "positive"]);
         
             exp_div = top_div.append('div').classed('lime explanation', true);
-            exp.show([["MedInc <= -0.69", -0.7782898185604474], ["AveOccup > 0.02", -0.3477704358156562], ["-0.64 < Latitude <= 0.98", -0.2088033145080175], ["-1.12 < Longitude <= 0.53", 0.10940398843260515], ["-0.39 < Rooms_per_House <= -0.26", 0.06655105809628448]], 1, exp_div);
+            exp.show([["MedInc <= -0.69", -0.8023506707604429], ["AveOccup > 0.02", -0.3180097940083654], ["-0.64 < Latitude <= 0.98", -0.23393926143615507], ["-1.12 < Longitude <= 0.53", 0.09021517208753486], ["AveRooms <= -0.39", -0.066224533843208]], 1, exp_div);
             
         var raw_div = top_div.append('div');
-            exp.show_raw_tabular([["MedInc", "-1.15", -0.7782898185604474], ["AveOccup", "0.08", -0.3477704358156562], ["Latitude", "0.20", -0.2088033145080175], ["Longitude", "0.28", 0.10940398843260515], ["Rooms_per_House", "-0.29", 0.06655105809628448]], 1, raw_div);
+            exp.show_raw_tabular([["MedInc", "-1.15", -0.8023506707604429], ["AveOccup", "0.08", -0.3180097940083654], ["Latitude", "0.20", -0.23393926143615507], ["Longitude", "0.28", 0.09021517208753486], ["AveRooms", "-0.50", -0.066224533843208]], 1, raw_div);
         
         </script>
         </body></html>

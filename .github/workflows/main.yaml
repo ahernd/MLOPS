@@ -1,0 +1,86 @@
+name: MLOps Deployment Workflow  # Name of the GitHub Actions workflow
+
+# Trigger the workflow on any push to the main branch
+on:
+  push:
+    branches: 
+      - main  # Ensure that this matches your primary branch (e.g., "main")
+
+# Global environment variables that will be used across jobs
+env:
+  AWS_REGION: us-east-1  # AWS region where the ECR and ECS services are located
+  ECR_REPOSITORY_NAME: mlops  # Amazon ECR repository name from the user input
+  ECR_URI: 202533536090.dkr.ecr.us-east-1.amazonaws.com/mlops  # Full ECR URI where the Docker image will be pushed
+
+jobs:
+  integration:
+    name: Build and Push to ECR  # Job to build and push Docker image to ECR
+    runs-on: ubuntu-latest  # This job will run on the latest Ubuntu virtual environment
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3  # Checkout the current code from the repository
+
+    - name: Install Utilities
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq unzip  # Install required utilities like jq and unzip
+
+    - name: Configure AWS credentials
+      # Use GitHub Secrets to configure AWS credentials to allow interactions with AWS services
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Access key ID from GitHub Secrets
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret access key from GitHub Secrets
+        aws-region: ${{ env.AWS_REGION }}  # AWS region (us-east-1 in this case)
+
+    - name: Login to Amazon ECR
+      id: login-ecr  # Log into Amazon ECR to authenticate Docker to push images
+      uses: aws-actions/amazon-ecr-login@v1  # Use AWS action to log into ECR
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image  # Build the Docker image, tag it with commit SHA, and push it to ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}  # Get the ECR registry URL after login
+        IMAGE_TAG: ${{ github.sha }}  # Tag the image with the GitHub commit SHA
+      run: |
+        # Build the Docker image from the current repository and tag it with the commit SHA
+        docker build -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG .
+        # Push the image to the ECR repository
+        docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+        # Store the image reference for later use
+        echo "image=$ECR_REGISTRY/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+  continuous-deployment:
+    needs: integration  # This job depends on the successful completion of the "integration" job
+    runs-on: self-hosted  # This job runs on a self-hosted runner (EC2 instance)
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3  # Checkout the latest code
+
+    - name: Configure AWS credentials
+      # Configure AWS credentials for the deployment phase
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Access key ID from GitHub Secrets
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Secret access key from GitHub Secrets
+        aws-region: ${{ env.AWS_REGION }}  # AWS region (us-east-1 in this case)
+
+    - name: Login to Amazon ECR
+      id: login-ecr  # Log into Amazon ECR to pull the image on the self-hosted runner
+      uses: aws-actions/amazon-ecr-login@v1  # AWS action to login to ECR
+
+    - name: Pull latest image
+      # Pull the latest Docker image from ECR using the latest tag
+      run: |
+        docker pull ${{ env.ECR_URI }}:latest
+
+    - name: Run Docker Image to serve users
+      # Run the pulled Docker image as a container on the EC2 instance
+      run: |
+        docker run -d -p 8080:8080 --ipc="host" --name=mlops-container -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' ${{ env.ECR_URI }}:latest
+
+    - name: Clean previous images and containers
+      # Clean up old Docker images and containers to free up space
+      run: |
+        docker system prune -f

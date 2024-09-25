@@ -21,6 +21,7 @@ st.title("California Housing Price Prediction")
 model = load_model()
 # additional comment
 # additional comment
+# changes for demo purpose
 
 if model:
     # Create input fields for the user to enter values for the features

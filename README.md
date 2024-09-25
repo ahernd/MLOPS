@@ -16,3 +16,4 @@
 
 ## Challenges
 - Encountered issues with Docker networking, resolved by setting correct EC2 security groups.
+- Testing
